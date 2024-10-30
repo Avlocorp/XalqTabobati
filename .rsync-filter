@@ -1,0 +1,8 @@
++ alembic/
++ dbs/
++ services/
++ alembic.ini
++ Dockerfile
++ main.py
++ requirements.txt
+- /*

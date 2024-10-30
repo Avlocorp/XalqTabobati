@@ -1,0 +1,38 @@
+- name: Deploy app
+  hosts: webserver
+
+  vars:
+    local_app_path: ./
+    deployment_user_group: 'docker'
+    app_release_version: 1.0.000
+    app_path: /var/www/avlo-muslim-micro
+    app_releases_path: '{{ app_path }}/releases'
+    app_releases_version_path: '{{ app_releases_path }}/{{ app_release_version }}.{{ timestamp }}'
+
+  tasks:
+  - name: Getting current timestamp
+    shell: date +%Y%m%d%H%M%S
+    register: timestamp_raw
+
+  - name: Set fact with current timestamp to use it in release directory name
+    set_fact: timestamp={{ timestamp_raw.stdout }}
+
+  - name: Create application directories structure
+    with_items:
+      - "{{ app_path }}"
+      - "{{ app_releases_path }}"
+    file:
+      path: "{{ item }}"
+      state: directory
+      mode: 0774
+      group: "{{ deployment_user_group }}"
+
+  - name: Deploy application code with rsync
+    synchronize:
+      src: "{{ local_app_path }}"
+      dest: "{{ app_releases_version_path }}"
+
+  - name: Build docker image
+    shell: "docker build -t avlomus-quran ."
+    args:
+      chdir: "{{ app_releases_version_path }}"

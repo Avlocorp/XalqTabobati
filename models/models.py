@@ -1,24 +1,19 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlmodel import SQLModel, Field
 
 Base = declarative_base()
 
-class FirstTable(Base):
-    __tablename__ = 'first_table'
-    id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(String, index=True)
-    session_id = Column(String, index=True)
+class Chats(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    unique_id: int = Field(default=None)
 
-    messages = relationship("SecondTable", back_populates="chat")
-
-
-class SecondTable(Base):
-    __tablename__ = 'second_table'
-    id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(String, ForeignKey('first_table.chat_id'))
-    message = Column(String)
-    role = Column(String)
-
-    # Relationship to the first table
-    chat = relationship("FirstTable", back_populates="messages")
+class ChatMessages(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    chat_id: int = Field(default=None, foreign_key="chats.id")  # Reference the correct table name
+    message: str = Field(sa_column=Text, default=None)
+    role: str = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)  # Use default_factory for dynamic values

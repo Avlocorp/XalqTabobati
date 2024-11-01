@@ -16,12 +16,9 @@ class MessagesRequest(BaseModel):
     message: str
     unique_id: str
 
-class SingleMessageRequest(BaseModel):
-    unique_id: str
 
 @modelTib.post("/message-bot/")
 async def messageBot(request: MessagesRequest):
-
     try:
         messsageHistory = get_or_create_chat(
             unique_id=request.unique_id,
@@ -30,8 +27,14 @@ async def messageBot(request: MessagesRequest):
         )
         chat_session = model_tibb.start_chat(history=messsageHistory['formatted_messages'])
         response = chat_session.send_message(request.message)
+        all_messages = get_or_create_chat(
+            unique_id=request.unique_id,
+            message=response.text,
+            role='model'
+        )
         return {
             "result": response.text,
+            "history": all_messages['unformatted_messages'],
         }
 
     except Exception as e:

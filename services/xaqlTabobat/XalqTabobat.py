@@ -16,6 +16,8 @@ class MessagesRequest(BaseModel):
     message: str
     unique_id: str
 
+class SingleMessageRequest(BaseModel):
+    unique_id: str
 
 @modelTib.post("/message-bot/")
 async def messageBot(request: MessagesRequest):
@@ -28,18 +30,29 @@ async def messageBot(request: MessagesRequest):
         )
         chat_session = model_tibb.start_chat(history=messsageHistory['formatted_messages'])
         response = chat_session.send_message(request.message)
-        all_messages = get_or_create_chat(
-            unique_id=request.unique_id,
-            message=response.text,
-            role='model'
-        )
         return {
             "result": response.text,
-            "history": all_messages['unformatted_messages'],
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the message: {str(e)}")
+
+
+@modelTib.get("/get-messages")
+async def getMessages(request: SingleMessageRequest):
+    try:
+        with Session(engine) as session:
+            chat = session.exec(select(Chats).where(Chats.unique_id == request.unique_id)).first()
+            if not chat:
+                raise HTTPException(status_code=404, detail="Chat not found")
+            messages = session.exec(select(ChatMessages).where(ChatMessages.chat_id == chat.id)).all()
+
+            return {"messages": messages}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while retrieving messages: {str(e)}")
+
+
 
 
 def get_or_create_chat(unique_id: str, message: str, role:str) :

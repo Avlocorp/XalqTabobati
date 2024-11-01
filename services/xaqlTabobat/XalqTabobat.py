@@ -39,10 +39,10 @@ async def messageBot(request: MessagesRequest):
 
 
 @modelTib.get("/get-messages")
-async def getMessages(request: SingleMessageRequest):
+async def getMessages(unique_id: str):
     try:
         with Session(engine) as session:
-            chat = session.exec(select(Chats).where(Chats.unique_id == request.unique_id)).first()
+            chat = session.exec(select(Chats).where(Chats.unique_id ==unique_id)).first()
             if not chat:
                 raise HTTPException(status_code=404, detail="Chat not found")
             messages = session.exec(select(ChatMessages).where(ChatMessages.chat_id == chat.id)).all()

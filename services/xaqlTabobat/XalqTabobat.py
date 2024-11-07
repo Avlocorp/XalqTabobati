@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Session, select, create_engine
 
-from Settings import ServerDbUrl
+from Settings import ServerDbUrl, localDbUrl
 from models.models import Chats, ChatMessages
 from services.xaqlTabobat.MLModel import model_tibb
 
@@ -54,6 +54,30 @@ async def getMessages(unique_id: str):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred while retrieving messages: {str(e)}")
+
+
+@modelTib.delete("/delete-messages-by-chat/{unique_id}")
+async def deleteMessages(unique_id: str):
+    try:
+        with Session(engine) as session:
+            chat = session.exec(select(Chats).where(Chats.unique_id == unique_id)).first()
+
+            if not chat:
+                raise HTTPException(status_code=404, detail="Chat not found")
+
+            chat_id = chat.id
+
+            messages = session.exec(select(ChatMessages).where(ChatMessages.chat_id == chat_id)).all()
+            for message in messages:
+                session.delete(message)
+
+            session.delete(chat)
+            session.commit()
+
+            return {"success": True, "message": "Chat and associated messages deleted successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 

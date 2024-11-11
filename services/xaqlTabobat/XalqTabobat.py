@@ -47,7 +47,7 @@ async def getMessages(unique_id: str):
         with Session(engine) as session:
             chat = session.exec(select(Chats).where(Chats.unique_id ==unique_id)).first()
             if not chat:
-                raise HTTPException(status_code=404, detail="Chat not found")
+                return {"messages": []}
             messages = session.exec(select(ChatMessages).where(ChatMessages.chat_id == chat.id)).all()
 
             return {"messages": messages}
